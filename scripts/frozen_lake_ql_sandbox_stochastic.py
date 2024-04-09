@@ -115,7 +115,8 @@ def postprocess(episodes, params, rewards, steps, map_size):
     st["map_size"] = np.repeat(f"{map_size}x{map_size}", st.shape[0])
     return res, st
 
-def run_episode(env: gym.Env, learner: Qlearning, explorer: EpsilonGreedy, params:Params) -> tuple:
+def run_episode(env: gym.Env, learner: Qlearning, explorer: EpsilonGreedy, params:Params,
+                rollout=False) -> tuple:
     state = env.reset(seed=params.seed)[0]  # Reset the environment
     step = 0
     done = False
@@ -125,7 +126,8 @@ def run_episode(env: gym.Env, learner: Qlearning, explorer: EpsilonGreedy, param
 
     while not done:
         action = explorer.choose_action(
-            action_space=env.action_space, state=state, qtable=learner.qtable
+            action_space=env.action_space, state=state, qtable=learner.qtable,
+            rollout=rollout
         )
 
         # Log all states and actions
@@ -136,10 +138,11 @@ def run_episode(env: gym.Env, learner: Qlearning, explorer: EpsilonGreedy, param
         new_state, reward, terminated, truncated, info = env.step(action)
 
         done = terminated or truncated
-
-        learner.qtable[state, action] = learner.update(
-            state, action, reward, new_state
-        )
+        
+        if not rollout:
+            learner.qtable[state, action] = learner.update(
+                state, action, reward, new_state
+            )
 
         total_rewards += reward
         step += 1
@@ -161,7 +164,11 @@ def run_env_deterministic(env: gym.Env, learner: Qlearning, explorer: EpsilonGre
         learner.reset_qtable()  # Reset the Q-table between runs
 
         for episode in tqdm(episodes, desc=f"Run {run}/{params.n_runs} - Episodes", leave=False):
-            total_rewards, step, all_states_eps, all_actions_eps = run_episode(env, learner, explorer, params)
+            # total_rewards, step, all_states_eps, all_actions_eps = run_episode(env, learner, explorer, params)
+            _ = run_episode(env, learner, explorer, params)
+            # Collecting rewards offline
+            total_rewards, step, \
+            all_states_eps, all_actions_eps = run_episode(env, learner, explorer, params, rollout=True)
             # Log all rewards and steps
             rewards[episode, run] = total_rewards
             steps[episode, run] = step
@@ -227,7 +234,7 @@ def plot_steps_and_rewards(rewards_df, steps_df, params:Params):
 def ql_agent():
 
     params = Params(
-        total_episodes=400,
+        total_episodes=300,
         learning_rate=0.8,
         gamma=0.95,
         epsilon=0.1,
@@ -291,7 +298,7 @@ def ql_agent():
             seed=params.seed,
         )
         envs = [env, env2]
-        transition_eps = [100, 200, 300]
+        transition_eps = [100, 125, 200, 225, 300]
         print(f"Map size: {map_size}x{map_size}")
         rewards, steps, episodes, qtables, all_states, all_actions = run_env_stochastic(envs, transition_eps, learner, explorer, params)
 
