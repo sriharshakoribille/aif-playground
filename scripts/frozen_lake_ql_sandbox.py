@@ -11,6 +11,7 @@ from tqdm import tqdm
 import gymnasium as gym
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
+import aif_pg.envs
 from aif_pg.algos.rl_algos import Qlearning, EpsilonGreedy
 
 sns.set_theme()
@@ -227,7 +228,7 @@ def ql_agent():
 
     for map_size in map_sizes:
         env = gym.make(
-            "FrozenLake-v1",
+            "FrozenLake_Mine-v1",
             is_slippery=params.is_slippery,
             render_mode="rgb_array",
             # render_mode="human",
