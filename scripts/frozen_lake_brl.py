@@ -124,17 +124,31 @@ def run_env_brl(env: gym.Env, params:Params) -> tuple:
     all_states = []
     all_actions = []
 
+    BRL_tr = np.zeros((params.total_episodes, params.n_runs))
+    BRL_ts = np.zeros((params.total_episodes, params.n_runs))
+    BRL_tr_online = np.zeros((params.total_episodes, params.n_runs))
+    BRL_ts_online = np.zeros((params.total_episodes, params.n_runs))
+
     for run in tqdm(range(params.n_runs)):  # Run several times to account for stochasticity
         brlagent = BRLAgent(params.total_episodes,nt=100, max_steps_per_episode=100, env=env,
                             seed=params.seed, a_t=1, b_t=1, a_r=1, b_r=1, k=2) 
-        run_rewards, run_steps, Q, all_states_run, all_actions_run = brlagent.simulator()
+        run_rewards, run_steps, Q, all_states_run, all_actions_run, \
+             BRL_tr_online[:,run], BRL_ts_online[:,run] = brlagent.simulator()
         # Log all rewards and steps
         rewards[:, run] = run_rewards
         steps[:, run] = run_steps
         all_states += all_states_run
         all_actions += all_actions_run
 
+        BRL_tr[:,run] = run_rewards
+        BRL_ts[:,run] = run_steps
+
+
         qtables[run, :, :] = Q.T
+
+    # np.save('aif-playground/scripts/stuff/frozen_lake/brl/brl_tr_pg_online.npy', BRL_tr_online) 
+    # np.save('aif-playground/scripts/stuff/frozen_lake/brl/brl_ts_pg_online.npy', BRL_ts_online) 
+    # np.save('aif-playground/scripts/stuff/frozen_lake/brl/brl_tr_pg.npy', BRL_tr) 
 
     return rewards, steps, episodes, qtables, all_states, all_actions
 
@@ -163,21 +177,21 @@ def plot_steps_and_rewards(rewards_df, steps_df, params:Params):
     fig.savefig(params.savefig_folder / img_title, bbox_inches="tight")
     fig.show()
 
-def ql_agent():
+def agent():
 
     params = Params(
-        total_episodes=20,
+        total_episodes=50,
         learning_rate=0.8,
         gamma=0.95,
         epsilon=0.1,
         map_size=5,
         seed=123,
         is_slippery=False,
-        n_runs=3,
+        n_runs=6,
         action_size=None,
         state_size=None,
         proba_frozen=0.9,
-        savefig_folder=Path("stuff/frozen_lake/brl"),
+        savefig_folder=Path("aif-playground/scripts/stuff/frozen_lake/brl"),
     )
 
     # Set the seed
@@ -200,7 +214,7 @@ def ql_agent():
             # desc=generate_random_map(
             #     size=map_size, p=params.proba_frozen, seed=params.seed
             # ),
-            desc = ["SFF","FHF","FFG"]
+            desc = ["SFF","FFH","FGF"]
             
         )
         env.reset(seed=params.seed)
@@ -232,4 +246,4 @@ def ql_agent():
     plt.show()
 
 if __name__ == "__main__":
-    ql_agent()
+    agent()

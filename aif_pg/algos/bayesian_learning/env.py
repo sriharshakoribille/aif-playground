@@ -35,26 +35,26 @@ def priors(theta_transition, theta_reward, env, discount):
     a_t = theta_transition;        
     b_t = (1-theta_transition)/2  
         
-    P = env.P
+    P = env.unwrapped.P
     states = list(range(state_space_size))
     for j in states:
         sa = P[j]
         for i in list(range(action_space_size)):
-                state_next = sa[i][0][1]
-                ass[i][j][state_next] = a_t      # intended move
-                if (state_next == 0) or (state_next == 8):
-                    ass[i][j][state_next] = ass[i][j][state_next] + b_t     # intended move
-                if state_next <=7:
-                    ass[i][j][state_next+1] = b_t  # lateral move
-                if state_next >=1:
-                    ass[i][j][state_next-1] = b_t # lateral move      
-                if state_next == 4:                    
-                        ass[i][j] = np.where(ass[i][j] !=0,b_t, 0)
-                        ass[i][j][state_next] = a_t # lateral move  
-                if state_next == j:
-                    if (state_next==7) or (state_next==5):
-                        ass[i][j] = 0
-                        ass[i][j][state_next] = 1-(1e-5)      # intended move
+            state_next = sa[i][0][1]
+            ass[i][j][state_next] = a_t      # intended move
+            if (state_next == 0) or (state_next == 8):
+                ass[i][j][state_next] = ass[i][j][state_next] + b_t     # intended move
+            if state_next <=7:
+                ass[i][j][state_next+1] = b_t  # lateral move
+            if state_next >=1:
+                ass[i][j][state_next-1] = b_t # lateral move      
+            if state_next == 4:                    
+                ass[i][j] = np.where(ass[i][j] !=0,b_t, 0)
+                ass[i][j][state_next] = a_t # lateral move  
+            if state_next == j:
+                if (state_next==7) or (state_next==5):
+                    ass[i][j] = 0
+                    ass[i][j][state_next] = 1-(1e-5)      # intended move
     ass[i][7] = 0  
     ass[i][7][7] = 1-(1e-5)
 
@@ -69,8 +69,8 @@ def priors(theta_transition, theta_reward, env, discount):
     b_r = (1-theta_reward)/2 
     #b_r = (1-theta_reward)
     
-    r[:,5] = 1*(a_r) # belief that this is the true reward location
-    r[:,7] = 1*(b_r) # belief that this is the wrong reward location
+    r[:,5] = 100*(a_r) # belief that this is the true reward location
+    r[:,7] = 100*(b_r) # belief that this is the wrong reward location
         
     mdp_env = MDP(ass,r,discount)
     return mdp_env

@@ -20,7 +20,10 @@ def play_episode(Q, env, max_steps_per_episode, seed):
     all_states = []
     all_actions = []
     all_states.append(state)
-    for step in range(max_steps_per_episode):  
+    done = False
+    step = 0
+    # for step in range(max_steps_per_episode):  
+    while not done:
         
         #action = argmaxrand(Q[:,state])     
         action = np.argmax(Q[:,state])  
@@ -29,7 +32,9 @@ def play_episode(Q, env, max_steps_per_episode, seed):
         all_states.append(new_state)
         all_actions.append(action)
         # r = np.where(new_state==7, 100,0)
-        r += reward
+        r += 100*reward
+        # r = reward*100
+        step += 1
             
         if done:            
             return r, step+1, all_states, all_actions  
@@ -137,4 +142,4 @@ class BRLAgent():
                 self.all_states += all_states
                 self.all_actions += all_actions
                 
-            return self.tr, self.ts, Q, self.all_states, self.all_actions
+            return self.tr, self.ts, Q, self.all_states, self.all_actions, self.tr_online, self.ts_online
