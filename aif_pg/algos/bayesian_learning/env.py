@@ -40,7 +40,7 @@ def priors(theta_transition, theta_reward, env, discount):
     for j in states:
         sa = P[j]
         for i in list(range(action_space_size)):
-            state_next = sa[i][0][1]
+            state_next = sa[i][0][1]        # Next state if we take the action i from the transition matrix
             ass[i][j][state_next] = a_t      # intended move
             if (state_next == 0) or (state_next == 8):
                 ass[i][j][state_next] = ass[i][j][state_next] + b_t     # intended move
