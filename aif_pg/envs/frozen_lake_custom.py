@@ -169,8 +169,8 @@ class FrozenLake_Custom(Env):
         A[REWARD_MODALITY_ID][0,:,:] = 1.0  # default makes Null the most likely observation everywhere.
                                             # 1 for almost all the locations with 'No_reward' obs
         
-        reward_loc_idx = self.loc_list.index(self.reward_loc)
-        hole_loc_idx = self.loc_list.index(self.hole_loc)
+        reward_loc_idx = self.reward_loc
+        hole_loc_idx = self.hole_loc
 
         # Setting appropriate values for the reward location
         A[REWARD_MODALITY_ID][0,reward_loc_idx,:] = 0.0
