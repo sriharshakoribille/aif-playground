@@ -17,8 +17,8 @@ REWARD_MODALITY_ID = 1
 REWARD_IDX = 1
 LOSS_IDX = 2
 
-# ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT"]
-ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "STAY"]
+ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT"]
+# ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "STAY"]
 
 class FrozenLake_Custom(Env):
     """ States:
@@ -30,8 +30,8 @@ class FrozenLake_Custom(Env):
             Reward - [No_reward, Reward, Loss]
     """
     
-    def __init__(self, reward_condition=1):
-        self.grid_dims = [3, 3]
+    def __init__(self, reward_loc=8, hole_loc=6, grid_dims=[3, 3], reward_condition=0):
+        self.grid_dims = grid_dims
         self.num_locations = np.prod(self.grid_dims)
         self.num_reward_conditions = 2
         self.num_states = [self.num_locations, self.num_reward_conditions]
@@ -50,7 +50,8 @@ class FrozenLake_Custom(Env):
             self.loc_list.append(it.multi_index)
             it.iternext()
 
-        (self.reward_loc, self.hole_loc) = self.set_reward_locs(reward_condition)
+        # (self.reward_loc, self.hole_loc) = self.set_reward_locs(reward_condition)
+        (self.reward_loc, self.hole_loc) = (reward_loc, hole_loc)
         self._transition_dist = self._construct_transition_dist()
         self._likelihood_dist = self._construct_likelihood_dist()
 
@@ -154,6 +155,9 @@ class FrozenLake_Custom(Env):
                 B[LOCATION_FACTOR_ID][next_state, curr_state, action_id] = 1.0
         
         B[TRIAL_FACTOR_ID][:,:,0] = np.eye(self.num_states[1])
+        for loc in (self.reward_loc, self.hole_loc):
+            B[LOCATION_FACTOR_ID][:,loc,:] = 0.0
+            B[LOCATION_FACTOR_ID][loc,loc,:] = 1.0
 
         return B
 
@@ -165,22 +169,28 @@ class FrozenLake_Custom(Env):
         A[LOCATION_MODALITY_ID] = np.tile(np.expand_dims(np.eye(self.num_locations), (-1)), (1, 1, self.num_states[1]))
 
         ## Reward addition
+        null_obs_idx = 0
+        reward_obs_idx = 1
+        loss_obs_idx = 2
         # make the reward observation depend on the location (being at reward location) and the reward condition
-        A[REWARD_MODALITY_ID][0,:,:] = 1.0  # default makes Null the most likely observation everywhere.
+        A[REWARD_MODALITY_ID][null_obs_idx, :, :] = 1.0  # default makes Null the most likely observation everywhere.
                                             # 1 for almost all the locations with 'No_reward' obs
         
         reward_loc_idx = self.reward_loc
         hole_loc_idx = self.hole_loc
 
+        reward_condition_0 = 0
+        reward_condition_1 = 1
+
         # Setting appropriate values for the reward location
-        A[REWARD_MODALITY_ID][0,reward_loc_idx,:] = 0.0
-        A[REWARD_MODALITY_ID][1,reward_loc_idx,0] = 1.0
-        A[REWARD_MODALITY_ID][2,reward_loc_idx,1] = 1.0
+        A[REWARD_MODALITY_ID][null_obs_idx, reward_loc_idx, :] = 0.0
+        A[REWARD_MODALITY_ID][reward_obs_idx, reward_loc_idx, reward_condition_0] = 1.0
+        A[REWARD_MODALITY_ID][loss_obs_idx, reward_loc_idx, reward_condition_1] = 1.0
 
         # Setting appropriate values for the hole location
-        A[REWARD_MODALITY_ID][0,hole_loc_idx,:] = 0.0
-        A[REWARD_MODALITY_ID][1,hole_loc_idx,1] = 1.0
-        A[REWARD_MODALITY_ID][2,hole_loc_idx,0] = 1.0
+        A[REWARD_MODALITY_ID][null_obs_idx, hole_loc_idx, :] = 0.0
+        A[REWARD_MODALITY_ID][reward_obs_idx, hole_loc_idx, reward_condition_1] = 1.0
+        A[REWARD_MODALITY_ID][loss_obs_idx, hole_loc_idx, reward_condition_0] = 1.0
 
         return A
 
